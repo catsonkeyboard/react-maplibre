@@ -1,102 +1,50 @@
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { 
-  LayersIcon, 
-  MapPinIcon, 
-  FileIcon, 
-  SettingsIcon 
-} from 'lucide-react';
+import { useMapStore } from '../stores/mapStore';
+import { airports } from '../config/airports';
 
 interface MapSidebarProps {
-  onLayerToggle?: (layerId: string, visible: boolean) => void;
-  onLocationSelect?: (location: [number, number]) => void;
+  onLocationSelect: (location: [number, number], airportCode?: string) => void;
 }
 
-const MapSidebar = ({
-  onLayerToggle,
-  onLocationSelect
-}: MapSidebarProps) => {
-  const presetLocations = [
-    { name: "北京", coordinates: [116.3912, 39.9073] },
-    { name: "上海", coordinates: [121.4737, 31.2304] },
-    { name: "广州", coordinates: [113.2644, 23.1291] },
-    { name: "深圳", coordinates: [114.0579, 22.5431] }
-  ];
-
-  const availableLayers = [
-    { id: "terrain", name: "地形图", active: true },
-    { id: "satellite", name: "卫星图", active: false },
-    { id: "traffic", name: "交通图", active: false },
-    { id: "buildings", name: "建筑物", active: true }
-  ];
+const MapSidebar = ({ onLocationSelect }: MapSidebarProps) => {
+  const { selectedAirport, layerVisibility, toggleLayer } = useMapStore();
 
   return (
-    <div className="space-y-4">
-      {/* 位置卡片 */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <MapPinIcon className="h-5 w-5" />
-            <CardTitle>常用位置</CardTitle>
-          </div>
-          <CardDescription>选择预设位置</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-2">
-            {presetLocations.map((location) => (
-              <Button 
-                key={location.name}
-                variant="outline"
-                onClick={() => onLocationSelect?.(location.coordinates as [number, number])}
-                className="justify-start"
-              >
-                <MapPinIcon className="h-4 w-4 mr-2" />
-                {location.name}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+    <div className="w-64 bg-white/90 backdrop-blur-sm shadow-xl p-6 overflow-y-auto border-r border-gray-200">
+      <h2 className="text-xl font-bold mb-6 text-gray-800 border-b border-gray-200 pb-3">机场列表</h2>
+      <div className="space-y-2">
+        {airports.map((airport) => (
+          <button
+            key={airport.code}
+            onClick={() => onLocationSelect(airport.location, airport.code)}
+            className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+              selectedAirport?.code === airport.code
+                ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600'
+                : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:shadow-sm'
+            }`}
+          >
+            {airport.name} ({airport.code})
+          </button>
+        ))}
+      </div>
 
-      {/* 图层卡片 */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <LayersIcon className="h-5 w-5" />
-            <CardTitle>图层</CardTitle>
-          </div>
-          <CardDescription>控制地图图层显示</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {availableLayers.map((layer) => (
-              <div key={layer.id} className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  id={`layer-${layer.id}`}
-                  defaultChecked={layer.active}
-                  onChange={(e) => onLayerToggle?.(layer.id, e.target.checked)}
-                  className="mr-2"
-                />
-                <label htmlFor={`layer-${layer.id}`} className="text-sm">
-                  {layer.name}
-                </label>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 工具按钮 */}
-      <div className="flex gap-2">
-        <Button className="flex-1" variant="outline">
-          <FileIcon className="h-4 w-4 mr-2" />
-          导出
-        </Button>
-        <Button className="flex-1" variant="outline">
-          <SettingsIcon className="h-4 w-4 mr-2" />
-          设置
-        </Button>
+      <h2 className="text-xl font-bold mt-8 mb-4 text-gray-800 border-b border-gray-200 pb-3">图层控制</h2>
+      <div className="space-y-3">
+        {Object.entries(layerVisibility).map(([layerId, visible]) => (
+          <label key={layerId} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+            <input
+              type="checkbox"
+              checked={visible as boolean}
+              onChange={(e) => toggleLayer(layerId as keyof typeof layerVisibility, e.target.checked)}
+              className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 focus:ring-offset-2"
+            />
+            <span className="text-gray-700 font-medium">
+              {layerId === 'geofence' && '地理围栏'}
+              {layerId === 'parking' && '停机位'}
+              {layerId === 'runway' && '跑道'}
+              {layerId === 'taxiway' && '滑行道'}
+            </span>
+          </label>
+        ))}
       </div>
     </div>
   );
